@@ -1,14 +1,33 @@
 ﻿internal class Program
 {
     static Dictionary<int,Cliente> clientesIngresados = new Dictionary<int, Cliente>();
-    const double OPCION1 = 15000;
-    const double OPCION2 = 30000;
-    const double OPCION3 = 10000;
-    const double OPCION4 = 40000;
+    static string[] dias = {"Dia 1", "Dia 2", "Dia 3", "Dia 4"};
+    static double[] precios = {15000, 30000, 10000, 40000};
     private static void Main(string[] args)
     {
-        
-        Console.WriteLine("Ingrese la opción:\ni.Nueva Inscripción\nii.Obtener Estadísticas del Evento\niii.Buscar Cliente\niv.Cambiar entrada de un Cliente\nv.Salir");
+        int menu;
+        do{
+            menu = ingresarInt("Ingrese la opción:\ni.Nueva Inscripción\nii.Obtener Estadísticas del Evento\niii.Buscar Cliente\niv.Cambiar entrada de un Cliente\nv.Salir");
+            switch(menu){
+                case 1:
+                    NuevaInscripción();
+                break;
+                
+                case 2:
+                    ObtenerEstadisticasEvento();
+                break;
+
+                case 3: 
+                    BuscarCliente();
+                break;
+
+                case 4:
+                    CambiarEntradaCliente();
+                break;
+            }
+            Console.ReadKey();
+            Console.Clear();
+        }while(menu != 5);
     }
 
         static void NuevaInscripción()
@@ -16,16 +35,29 @@
             string dni = ingresarDNI("Ingrese el DNI: ");
             string apellido = ingresarString("Ingrese el apellido: ");
             string nombre = ingresarString("Ingrese el nombre: ");
-
-            double totalAbondado;
-            int tipoEntrada = ingresarEntrada("Ingrese el tipo de entrada: \n1. Día 1 , valor a abonar $15000\n2. Día 2, valor a abonar $30000\n3. Día 3, valor a abonar $10000\n4. Full Pass, valor a abonar $40000", out totalAbonado);
-            clientesIngresados.Add(Tiquetera.DevolverUltimoID(), new Cliente(dni, apellido, nombre, DateTime.Today, tipoEntrada, totalAbondado));
+            Console.WriteLine("Ingrese el tipo de entrada: ");
+            int tipoEntrada = ingresarEntrada();
+            double totalAbonado = ingresarAbonado("Ingrese el total abonado: ", tipoEntrada);
+            int ID = Tiquetera.DevolverUltimoID();
+            Console.WriteLine("\nSu ID es: " + ID);
+            clientesIngresados.Add(ID, new Cliente(dni, apellido, nombre, tipoEntrada, totalAbonado));
 
         }
 
         static void ObtenerEstadisticasEvento(){
-            if(clientesIngresados.Count == 0){
-                Console.WriteLine("Cantidad de Clientes inscriptos: " + clientesIngresados.Count + "\nPorcentaje de entradas diferenciadas por tipo respecto al total: " + "\nRecaudación de cada día: " + "Recaudación total: ");
+            if(clientesIngresados.Count > 0){
+                double precioTotal = 0;
+                int[] entradas = new int[4];
+                foreach(int id in clientesIngresados.Keys){
+                    entradas[clientesIngresados[id].TipoEntrada-1]++;
+                }
+                Console.WriteLine("Cantidad de Clientes inscriptos: " + clientesIngresados.Count);
+                for(int i = 0; i < entradas.Length; i++){
+                    Console.WriteLine();
+                    Console.WriteLine(dias[i] + ": \nRepresenta " + (entradas[i]*100)/clientesIngresados.Count + "% del total de entradas\nRecaudó $" + entradas[i]*precios[i]);
+                    precioTotal += entradas[i]*precios[i];
+                }
+                Console.WriteLine("Recaudacion total: " + precioTotal);
             }
             else{
                 Console.WriteLine("Aún no se anotó nadie");
@@ -43,18 +75,18 @@
 
         static void CambiarEntradaCliente(){
             int nuevaEntrada;
-            int id = ingresarInt("Ingrese al ID del cliente: ");
+            int id = ingresarInt("Ingrese el ID del cliente: ");
             if(clientesIngresados.ContainsKey(id)){
-                if(clientesIngresados[id].TotalAbonado == OPCION4){
-                    Console.WriteLine("No se puede cambiar la entrada porque es la que mayor precio tiene: " + OPCION4);
+                if(clientesIngresados[id].TotalAbonado == precios[3]){
+                    Console.WriteLine("No se puede cambiar la entrada porque es la que mayor precio tiene: " + precios[3]);
                 }
                 else{
-                    nuevaEntrada = ingresarEntrada("Ingrese el tipo de entrada: \n1. Día 1 , valor a abonar $15000\n2. Día 2, valor a abonar $30000\n3. Día 3, valor a abonar $10000\n4. Full Pass, valor a abonar $40000");
-                    if(clientesIngresados[id].CambiarEntrada(nuevaEntrada)){
-                        clientesIngresados[id].TipoEntrada = nuevaEntrada;
+                    nuevaEntrada = ingresarEntrada();
+                    if(!clientesIngresados[id].CambiarEntrada(nuevaEntrada, calcularTotal(nuevaEntrada))){
+                        Console.WriteLine("No se puede cambiar la entrada porque tiene mayor precio que la entrada a la quiere cambiar");
                     }
                     else{
-                        Console.WriteLine("No se puede cambiar la entrada porque tiene mayor precio que la entrada a la quiere cambiar");
+                        Console.WriteLine("Se cambió la entrada");
                     }
                 }
             }else{
@@ -80,38 +112,65 @@
             return dni;
         }
 
-        static int ingresarInt(string mensaje)
+        static int ingresarInt(string mensaje = "")
         {
             Console.WriteLine(mensaje);
             return int.Parse(Console.ReadLine());
         }
 
-        static int ingresarEntrada(string mensaje, out double totalAbonado)
+        static int ingresarEntrada()
         {
-            int entrada = ingresarInt(mensaje);
+            mostrarOpcionesDias();
+            int entrada = ingresarInt();
             while (entrada < 1 || entrada > 4)
             {
                 Console.WriteLine("ERROR. El ingreso debe estar entre los rangos ofrecidos");
-                entrada = ingresarInt(mensaje);
+                mostrarOpcionesDias();
+                entrada = ingresarInt();
             }
-            switch (entrada)
-            {
-                case 1:
-                    totalAbonado = OPCION1;
-                    break;
-
-                case 2:
-                    totalAbonado = OPCION2;
-                    break;
-
-                case 3:
-                    totalAbonado = OPCION3;
-                    break;
-
-                case 4:
-                    totalAbonado = OPCION4;
-                    break;
-            }
+        
             return entrada;
+        }
+
+        static void mostrarOpcionesDias(){
+            for(int i = 0; i < dias.Length; i++){Console.WriteLine(dias[i] + ", valor a abonar $" + precios[i]);}
+        }
+
+        static double ingresarAbonado(string mensaje, int entrada){
+            double total = calcularTotal(entrada);
+            Console.WriteLine(mensaje);
+            double abonado = double.Parse(Console.ReadLine());
+            while(abonado < total){
+                Console.WriteLine("ERROR. El pago debe ser igual o mayor al precio de la entrada");
+                Console.WriteLine(mensaje);
+                abonado = double.Parse(Console.ReadLine());
+            }
+            if(abonado > total){
+                Console.WriteLine("Recibe " + (abonado - total) + " de vuelto");
+            }
+            return total;
+        }
+
+        static double calcularTotal(int entrada){
+            double total = 0;
+            switch (entrada)
+                {
+                    case 1:
+                        total = precios[0];
+                    break;
+
+                    case 2:
+                        total = precios[1];
+                    break;
+
+                    case 3:
+                        total = precios[2];
+                    break;
+
+                    case 4:
+                        total = precios[3];
+                    break;
+                }
+            return total;
         }
 }
